@@ -4,49 +4,45 @@ API REST del Sistema de Gestión de Ventas al Detal — Proyecto 1 del Programa 
 
 ## Propósito
 
-Backend transaccional que expone la API consumida por `p1-frontend`. Gestiona clientes, productos, categorías, ventas e inventario, con autenticación y autorización granular por acción (no solo por rol).
+Backend transaccional que expone la API consumida por `p1-frontend`. Gestiona clientes, productos, categorías, ventas e inventario, con autenticación y autorización granular por acción.
 
 ## Stack
 
 - **Framework:** NestJS + TypeScript
-- **Base de datos:** PostgreSQL (alojada en [Neon](https://neon.tech))
+- **Base de datos:** PostgreSQL en [Neon](https://neon.tech)
 - **ORM:** Prisma
-- **Autenticación:** JWT + Passport, contraseñas con bcrypt
-- **Autorización:** RBAC por permiso de acción (ej. `clientes:crear`, `clientes:eliminar`), no solo por rol
-- **Despliegue:** [Render](https://render.com) (free tier)
+- **Autenticación:** JWT + Passport, bcrypt para passwords
+- **Autorización:** RBAC por permiso (`clientes:crear`, `clientes:eliminar`, etc.), agrupados en roles `admin` y `vendedor`
+- **Despliegue:** [Render](https://render.com), free tier
 
 ## Decisiones de arquitectura
 
-El backend sigue un **monolito modular por capas**: cada módulo de dominio (Clientes, Productos, Categorías, Ventas, Inventario, Auth) mantiene sus propias capas (Controller, Service, Repository, DTOs). Se eligió esta estructura sobre Clean Architecture completa por ser proporcional al alcance de un primer proyecto de portafolio, sin descartar una migración incremental futura si el dominio lo justifica.
+Uso un monolito modular por capas: cada módulo de dominio (Clientes, Productos, Categorías, Ventas, Inventario, Auth) tiene su propio Controller, Service, Repository y DTOs. Evalué Clean Architecture completa, pero para un primer proyecto de portafolio resultaba sobre-ingeniería — esta estructura ya deja el terreno preparado para migrar hacia allá en un proyecto futuro si el dominio lo justifica.
 
-La autorización se resuelve por permiso de acción, agrupados en roles (`admin`, `vendedor`), en vez de un chequeo binario por rol — necesario porque reglas de negocio como "solo admin puede eliminar clientes" no se expresan bien con un guard genérico por módulo.
+La autorización la resolví por permiso de acción en vez de por rol genérico, porque reglas como "solo admin puede eliminar clientes" no se pueden expresar bien con un guard binario por módulo — necesitaba algo más granular.
 
-El detalle completo de estas decisiones, alternativas evaluadas y criterios está en el documento **P1-AD** (Análisis y Diseño Arquitectónico), fuente autoritativa del proyecto.
+Estas y otras decisiones de arquitectura del proyecto están respaldadas en un análisis previo (P1-AD) con alternativas evaluadas y criterios explícitos.
 
 ## Ejecución local
 
 ```bash
-# Instalar dependencias
 npm install
-
-# Levantar en modo desarrollo (watch mode)
+npx prisma generate
 npm run start:dev
 ```
 
-> Requiere un archivo `.env` local (ver `.env.example`) con las variables de conexión a la base de datos y secretos de autenticación. Este archivo nunca se versiona.
+Necesita un `.env` local (ver `.env.example`) con `DATABASE_URL` y `DIRECT_URL` apuntando a Postgres en Neon.
 
-## Tests
+## Base de datos
 
-```bash
-npm run test        # unitarios
-npm run test:e2e    # end-to-end
-npm run test:cov    # cobertura
-```
+Postgres en Neon, con Prisma como ORM. Hay dos connection strings porque las migraciones necesitan conexión directa a la base de datos: `DATABASE_URL` (con pooling, la que usa la app en runtime) y `DIRECT_URL` (sin pooling, solo para migraciones).
+
+El esquema todavía no tiene modelos de dominio — está en `prisma/schema.prisma`, y se puede seguir el avance en el historial de commits.
 
 ## Despliegue
 
-Desplegado en Render (free tier). El servicio gratuito duerme tras 15 minutos de inactividad — el primer request tras ese período puede tardar hasta 50 segundos en responder (cold start). Esto es esperado y no indica un error del sistema.
+Desplegado en Render (free tier). Ojo: si nadie lo usa por 15 minutos se duerme, y el próximo request tarda hasta 50 segundos en despertar.
 
 ## Estado del proyecto
 
-En construcción. Ver el historial de commits para seguir el proceso de desarrollo incremental.
+En construcción — ver historial de commits.

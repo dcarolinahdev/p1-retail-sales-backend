@@ -45,3 +45,4 @@ yarn-error.log*
 
 # Prisma (se agregará cuando lo configuremos en el próximo incremento,
 # pero lo dejo previsto para no volver a tocar este archivo luego)
+/generated/prisma
