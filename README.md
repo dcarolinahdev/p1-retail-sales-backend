@@ -37,7 +37,7 @@ Necesita un `.env` local (ver `.env.example`) con `DATABASE_URL` y `DIRECT_URL` 
 
 Postgres en Neon, con Prisma como ORM. Hay dos connection strings porque las migraciones necesitan conexión directa a la base de datos: `DATABASE_URL` (con pooling, la que usa la app en runtime) y `DIRECT_URL` (sin pooling, solo para migraciones).
 
-El esquema define el bloque de autenticación/autorización: `Usuario`, `Rol`, `Permiso` (con tabla intermedia `RolPermiso` para la relación N:M). Resto de modelos de dominio (Clientes, Productos, Categorías, Ventas, Inventario) pendientes — ver historial de commits.
+El esquema modela el dominio completo: `Usuario`, `Rol`, `Permiso` (autenticación/autorización) y `Cliente`, `Categoria`, `Producto`, `Inventario`, `Venta`, `DetalleVenta` (negocio). El stock de inventario se calcula agregando movimientos, nunca se guarda como campo fijo. Los precios de venta quedan congelados en `DetalleVenta` al momento de la transacción, independientes del precio vigente del producto.
 
 ## Despliegue
 

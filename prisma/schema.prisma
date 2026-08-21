@@ -64,7 +64,110 @@ model Usuario {
 
   rolId String
   rol   Rol    @relation(fields: [rolId], references: [id])
+  ventas Venta[] // ventas registradas por este usuario
 
   @@index([rolId]) // acelera filtros/joins por rol
   @@map("usuarios")
+}
+
+// Categorías de producto (relación 1:N con Producto)
+model Categoria {
+  id       String   @id @default(cuid())
+  nombre   String   @unique
+  creadoEn DateTime @default(now())
+
+  productos Producto[]
+
+  @@map("categorias")
+}
+
+// Clientes del negocio (a quienes se les vende, no operan el sistema)
+model Cliente {
+  id                 String   @id @default(cuid())
+  nombres            String
+  apellidos          String
+  documentoIdentidad String   @unique
+  email              String   @unique
+  telefono           String?
+  direccion          String?
+  creadoEn           DateTime @default(now())
+
+  ventas Venta[]
+
+  @@map("clientes")
+}
+
+// Catálogo de productos
+model Producto {
+  id           String   @id @default(cuid())
+  nombre       String
+  descripcion  String?
+  precioActual Decimal  @db.Decimal(10, 2) // precio de lista vigente
+  creadoEn     DateTime @default(now())
+
+  categoriaId String
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+
+  movimientosInventario Inventario[]
+  detallesVenta         DetalleVenta[]
+
+  @@index([categoriaId]) // filtrado de catálogo por categoría
+  @@map("productos")
+}
+
+// Tipo de movimiento de inventario
+enum TipoMovimiento {
+  ENTRADA
+  SALIDA
+}
+
+// Movimientos de inventario (el stock se calcula agregando estos registros, nunca se guarda como campo fijo)
+model Inventario {
+  id       String         @id @default(cuid())
+  tipo     TipoMovimiento
+  cantidad Int
+  fecha    DateTime       @default(now())
+
+  productoId String
+  producto   Producto @relation(fields: [productoId], references: [id])
+
+  @@index([productoId]) // cálculo de stock por producto
+  @@index([productoId, fecha]) // reportes de movimientos por producto en un rango de fechas
+  @@map("inventario")
+}
+
+// Ventas (cabecera)
+model Venta {
+  id     String   @id @default(cuid())
+  fecha  DateTime @default(now())
+
+  clienteId String
+  cliente   Cliente @relation(fields: [clienteId], references: [id])
+
+  usuarioId String // quién registró la venta
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  detalles DetalleVenta[]
+
+  @@index([clienteId]) // reportes por cliente
+  @@index([usuarioId])
+  @@index([fecha]) // reportes por rango de fechas
+  @@map("ventas")
+}
+
+// Detalle de venta (líneas de producto dentro de una venta)
+model DetalleVenta {
+  id            String  @id @default(cuid())
+  cantidad      Int
+  precioUnitario Decimal @db.Decimal(10, 2) // precio congelado al momento de la venta
+
+  ventaId String
+  venta   Venta @relation(fields: [ventaId], references: [id])
+
+  productoId String
+  producto   Producto @relation(fields: [productoId], references: [id])
+
+  @@index([ventaId])
+  @@index([productoId]) // reportes de ventas por producto
+  @@map("detalle_ventas")
 }
