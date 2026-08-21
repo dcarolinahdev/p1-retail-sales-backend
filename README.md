@@ -37,7 +37,7 @@ Necesita un `.env` local (ver `.env.example`) con `DATABASE_URL` y `DIRECT_URL` 
 
 Postgres en Neon, con Prisma como ORM. Hay dos connection strings porque las migraciones necesitan conexión directa a la base de datos: `DATABASE_URL` (con pooling, la que usa la app en runtime) y `DIRECT_URL` (sin pooling, solo para migraciones).
 
-El esquema todavía no tiene modelos de dominio — está en `prisma/schema.prisma`, y se puede seguir el avance en el historial de commits.
+El esquema define el bloque de autenticación/autorización: `Usuario`, `Rol`, `Permiso` (con tabla intermedia `RolPermiso` para la relación N:M). Resto de modelos de dominio (Clientes, Productos, Categorías, Ventas, Inventario) pendientes — ver historial de commits.
 
 ## Despliegue
 

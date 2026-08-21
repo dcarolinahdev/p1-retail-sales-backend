@@ -13,3 +13,58 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
+
+// Catálogo de permisos por acción (ej. "clientes:crear", "clientes:eliminar")
+model Permiso {
+  id          String   @id @default(cuid())
+  nombre      String   @unique // ej. "clientes:crear"
+  descripcion String?
+  creadoEn    DateTime @default(now())
+
+  roles RolPermiso[] // relación N:M con Rol, vía tabla intermedia
+
+  @@map("permisos")
+}
+
+// Roles del sistema (admin, vendedor)
+model Rol {
+  id       String   @id @default(cuid())
+  nombre   String   @unique // ej. "admin", "vendedor"
+  creadoEn DateTime @default(now())
+
+  permisos  RolPermiso[] // relación N:M con Permiso
+  usuarios  Usuario[]    // 1 rol puede tener muchos usuarios
+
+  @@map("roles")
+}
+
+// Tabla intermedia explícita para la relación N:M Rol <-> Permiso
+// (explícita en vez de implícita para poder auditar cuándo se asignó cada permiso)
+model RolPermiso {
+  rolId     String
+  permisoId String
+  asignadoEn DateTime @default(now())
+
+  rol     Rol     @relation(fields: [rolId], references: [id])
+  permiso Permiso @relation(fields: [permisoId], references: [id])
+
+  @@id([rolId, permisoId]) // llave primaria compuesta, evita duplicados
+  @@map("rol_permisos")
+}
+
+// Usuarios del sistema (quienes operan la aplicación: admin o vendedor)
+model Usuario {
+  id        String   @id @default(cuid())
+  nombres   String
+  apellidos String
+  email     String   @unique
+  password  String   // hash generado con bcrypt, nunca texto plano
+  activo    Boolean  @default(true) // soft delete: false = usuario desactivado
+  creadoEn  DateTime @default(now())
+
+  rolId String
+  rol   Rol    @relation(fields: [rolId], references: [id])
+
+  @@index([rolId]) // acelera filtros/joins por rol
+  @@map("usuarios")
+}
