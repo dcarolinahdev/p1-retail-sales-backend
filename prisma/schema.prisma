@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
@@ -32,8 +32,8 @@ model Rol {
   nombre   String   @unique // ej. "admin", "vendedor"
   creadoEn DateTime @default(now())
 
-  permisos  RolPermiso[] // relación N:M con Permiso
-  usuarios  Usuario[]    // 1 rol puede tener muchos usuarios
+  permisos RolPermiso[] // relación N:M con Permiso
+  usuarios Usuario[] // 1 rol puede tener muchos usuarios
 
   @@map("roles")
 }
@@ -41,8 +41,8 @@ model Rol {
 // Tabla intermedia explícita para la relación N:M Rol <-> Permiso
 // (explícita en vez de implícita para poder auditar cuándo se asignó cada permiso)
 model RolPermiso {
-  rolId     String
-  permisoId String
+  rolId      String
+  permisoId  String
   asignadoEn DateTime @default(now())
 
   rol     Rol     @relation(fields: [rolId], references: [id])
@@ -58,12 +58,12 @@ model Usuario {
   nombres   String
   apellidos String
   email     String   @unique
-  password  String   // hash generado con bcrypt, nunca texto plano
+  password  String // hash generado con bcrypt, nunca texto plano
   activo    Boolean  @default(true) // soft delete: false = usuario desactivado
   creadoEn  DateTime @default(now())
 
-  rolId String
-  rol   Rol    @relation(fields: [rolId], references: [id])
+  rolId  String
+  rol    Rol     @relation(fields: [rolId], references: [id])
   ventas Venta[] // ventas registradas por este usuario
 
   @@index([rolId]) // acelera filtros/joins por rol
@@ -90,6 +90,7 @@ model Cliente {
   email              String   @unique
   telefono           String?
   direccion          String?
+  activo             Boolean  @default(true) // soft delete: false = cliente desactivado
   creadoEn           DateTime @default(now())
 
   ventas Venta[]
@@ -138,8 +139,8 @@ model Inventario {
 
 // Ventas (cabecera)
 model Venta {
-  id     String   @id @default(cuid())
-  fecha  DateTime @default(now())
+  id    String   @id @default(cuid())
+  fecha DateTime @default(now())
 
   clienteId String
   cliente   Cliente @relation(fields: [clienteId], references: [id])
@@ -157,12 +158,12 @@ model Venta {
 
 // Detalle de venta (líneas de producto dentro de una venta)
 model DetalleVenta {
-  id            String  @id @default(cuid())
-  cantidad      Int
+  id             String  @id @default(cuid())
+  cantidad       Int
   precioUnitario Decimal @db.Decimal(10, 2) // precio congelado al momento de la venta
 
   ventaId String
-  venta   Venta @relation(fields: [ventaId], references: [id])
+  venta   Venta  @relation(fields: [ventaId], references: [id])
 
   productoId String
   producto   Producto @relation(fields: [productoId], references: [id])
