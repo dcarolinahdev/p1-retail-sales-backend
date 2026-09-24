@@ -190,6 +190,46 @@ refleja un problema de diseño más arriba en la cadena.
 (todo opcional) — permite mandar solo `{ "telefono": "..." }` sin repetir
 el resto, que es el comportamiento correcto de un PATCH real.
 
+### Parámetro `tx` opcional para participar en transacciones compartidas
+**Dónde:** `InventarioService.registrarMovimiento()`, `calcularStock()`
+
+**El problema que resuelve:** un método necesita poder ejecutarse TANTO
+dentro de una transacción abierta por otro servicio (ej. `VentasService`)
+COMO de forma independiente, sin duplicar la lógica en dos versiones.
+
+```typescript
+async metodo(
+  ...,
+  tx: PrismaTransactionClient | PrismaService = this.prisma,
+) { ... }
+```
+
+**Dos conceptos separados en esa firma, que no hay que confundir:**
+- *Opcional con valor por defecto* (`= this.prisma`): si no pasan nada,
+  usa la conexión normal, fuera de transacción.
+- *Unión de tipos* (`|`): el valor que SÍ pasen puede tener una de dos
+  formas distintas y ambas son válidas — el `tx` real que Prisma entrega
+  dentro de `$transaction(async (tx) => {...})` NO es del mismo tipo que
+  `PrismaService`, aunque tengan los mismos métodos disponibles
+  (`.producto`, `.inventario`, etc.) — TypeScript exige declarar
+  explícitamente ambos tipos posibles.
+
+**Por qué existe `PrismaTransactionClient` como tipo propio (con `Omit`),
+en vez de importar el tipo que Prisma ya define internamente:** con el
+generador `"prisma-client"` + `moduleFormat: "cjs"` (la configuración de
+este proyecto), ese tipo interno de Prisma no queda expuesto para
+importación directa, a diferencia del generador clásico `"prisma-client-js"`.
+Se reconstruye manualmente: toma `PrismaClient` completo y le quita
+(`Omit`) los métodos que un `tx` de transacción no tiene sentido que
+tenga (`$connect`, `$disconnect`, `$transaction`, etc.) — porque ya estás
+conectada y no puedes anidar otra transacción dentro de la actual.
+
+**Por qué vale la pena el patrón:** sin él, tendría que existir un
+`registrarMovimiento` y otro `registrarMovimientoEnTransaccion`, duplicando
+toda la lógica de validación de stock — justo la duplicación de lógica de
+negocio real que DRY busca evitar (a diferencia del caso de soft-delete/
+findOne, donde decidimos que la duplicación SÍ era aceptable por ser trivial).
+
 ## Errores resueltos (y qué explican)
 
 ### ESM vs. CommonJS en el cliente de Prisma generado
