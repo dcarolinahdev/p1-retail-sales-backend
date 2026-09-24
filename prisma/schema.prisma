@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -70,6 +70,7 @@ model Usuario {
 model Categoria {
   id       String   @id @default(cuid())
   nombre   String   @unique
+  activo   Boolean  @default(true)
   creadoEn DateTime @default(now())
 
   productos Producto[]
@@ -100,6 +101,7 @@ model Producto {
   nombre       String
   descripcion  String?
   precioActual Decimal  @db.Decimal(10, 2) // precio de lista vigente
+  activo       Boolean  @default(true)
   creadoEn     DateTime @default(now())
 
   categoriaId String

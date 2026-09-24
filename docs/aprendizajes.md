@@ -36,6 +36,30 @@ ventas). `findAll()` filtra por defecto solo los que el negocio
 necesita ver según el caso de uso (ver nota de "listado liviano" más
 abajo si se retoma ese ajuste).
 
+### `select` anidado dentro de `include` — limitar campos de una relación
+**Dónde:** `ProductosService.findOne()`
+
+Al traer un registro con su relación (`Producto` con su `Categoria`), `include: { categoria: true }`
+trae la fila COMPLETA de la relación. Si esa tabla relacionada crece con
+campos que no aportan al contexto actual, se arrastran igual.
+
+Solución: `select` anidado dentro de `include`, para pedir solo los campos
+necesarios de la relación, sin perder los campos completos del registro
+principal:
+
+```typescript
+include: {
+  categoria: {
+    select: { id: true, nombre: true },
+  },
+}
+```
+
+**Por qué importa más adelante:** en `Venta`, que relaciona `Cliente`,
+`Usuario` y `DetalleVenta` (que a su vez relaciona `Producto`), traer todo
+completo en cada nivel sería especialmente costoso — este patrón se vuelve
+más relevante cuantas más relaciones anidadas tenga una consulta.
+
 ### RBAC por permiso vs. por rol hardcodeado
 **Dónde:** `PermissionsGuard`, tabla `RolPermiso`
 
@@ -89,6 +113,22 @@ Convive sin conflicto con los `throw new XxxException(...)` manuales
 (como en `AuthService`) — son dos mecanismos distintos: uno para
 errores que la lógica de negocio detecta explícitamente, otro para
 errores que la base de datos rechaza directamente.
+
+### Criterio para decidir qué códigos de error de Prisma mapear
+No todos los códigos de `PrismaClientKnownRequestError` se mapean explícitamente
+en el filter — solo los que el diseño de la aplicación puede realmente producir.
+
+Mapeados: `P2002` (único duplicado), `P2025` (no encontrado en update/delete),
+`P2003` (llave foránea inválida, ej. `categoriaId` que no existe).
+
+Descartados por ahora: `P2014` (violación de relación requerida al borrar) —
+no aplica porque el diseño usa soft delete en todo el proyecto, nunca un
+`delete` real que pueda violar una relación. Agregar su manejo sería cubrir
+un caso que el propio diseño ya hace imposible.
+
+**Regla general:** cubrir los códigos que el diseño actual puede generar,
+no todos los códigos que Prisma documenta — el `default` (500 controlado)
+es suficiente red de seguridad para el resto.
 
 ### Cuándo SÍ dar detalle del error, cuándo NO
 En login (endpoint público, sin autenticar), el mensaje de error NO
