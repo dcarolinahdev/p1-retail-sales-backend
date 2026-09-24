@@ -21,6 +21,8 @@ Uso un monolito modular por capas: cada módulo de dominio (Clientes, Productos,
 
 La autorización la resolví por permiso de acción en vez de por rol genérico, porque reglas como "solo admin puede eliminar clientes" no se pueden expresar bien con un guard binario por módulo — necesitaba algo más granular.
 
+Los errores de Prisma (violaciones de restricciones únicas, registros no encontrados) se traducen automáticamente a respuestas HTTP consistentes mediante un `ExceptionFilter` global, sin repetir ese manejo en cada módulo.
+
 Estas y otras decisiones de arquitectura del proyecto están respaldadas en un análisis previo (P1-AD) con alternativas evaluadas y criterios explícitos.
 
 ## Ejecución local
@@ -46,3 +48,7 @@ Desplegado en Render (free tier). Ojo: si nadie lo usa por 15 minutos se duerme,
 ## Estado del proyecto
 
 En construcción — ver historial de commits.
+
+## Convención de commits
+
+Este repositorio sigue [Conventional Commits](https://www.conventionalcommits.org/) (`feat`, `fix`, `chore`, `docs`, `refactor`). Detalle de cada tipo y cuándo se usa en [`docs/aprendizajes.md`](./docs/aprendizajes.md).
