@@ -161,6 +161,35 @@ para que esas variables queden disponibles en toda la app.
 `JwtStrategy` la ejecuta Passport en CADA request a una ruta protegida (verifica
 que el token siga siendo válido). Dos momentos distintos del mismo flujo de auth.
 
+### async/await: la diferencia entre una Promise y su valor resuelto
+**Dónde:** `ProductosService.findAll()`, `findOne()`
+
+Una función `async` en JavaScript/TypeScript siempre devuelve una `Promise`
+— un objeto que representa "un valor que va a estar disponible más
+adelante", no el valor en sí, de forma inmediata.
+
+```typescript
+const productos = this.prisma.producto.findMany(...); // Promise, no el array
+const productos = await this.prisma.producto.findMany(...); // el array real
+```
+
+`await` "desenvuelve" la promesa y espera a que se resuelva, entregando
+el valor real — pero solo se puede usar dentro de una función marcada
+como `async`.
+
+**El caso especial de `.map()` con una función async adentro:**
+```typescript
+productos.map(async (p) => ({ ...p, stock: await calcularStock(p.id) }))
+```
+Esto NO devuelve un array de objetos listos — devuelve un array de
+PROMESAS (una por cada producto, porque cada iteración es su propia
+función async). `Promise.all(arrayDePromesas)` es lo que espera a que
+TODAS se resuelvan y entrega el array final con los valores reales.
+
+Olvidar el `Promise.all` en este patrón es un error común: el código
+compila y corre, pero el resultado sería un array de promesas pendientes
+en vez de los datos esperados.
+
 ### PATCH con id en la URL, no en el body — y por qué importa
 **Dónde:** `PATCH /clientes/:id`, `UpdateClienteDto` con `PartialType`
 

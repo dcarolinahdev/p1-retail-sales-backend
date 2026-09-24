@@ -6,8 +6,10 @@ import { ProductosService } from './productos.service';
 import { ProductosController } from './productos.controller';
 
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { InventarioModule } from '../inventario/inventario.module';
 
 @Module({
+  imports: [InventarioModule],
   controllers: [
     CategoriasController,
     ProductosController
