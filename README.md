@@ -46,3 +46,7 @@ Desplegado en Render (free tier). Ojo: si nadie lo usa por 15 minutos se duerme,
 ## Estado del proyecto
 
 En construcción — ver historial de commits.
+
+## Convención de commits
+
+Este repositorio sigue [Conventional Commits](https://www.conventionalcommits.org/) (`feat`, `fix`, `chore`, `docs`, `refactor`). Detalle de cada tipo y cuándo se usa en [`docs/aprendizajes.md`](./docs/aprendizajes.md).

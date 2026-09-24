@@ -82,3 +82,15 @@ Corrido como chequeo de conexión, reescribe el schema completo a partir de la
 BD real — pierde comentarios explicativos que no existen como metadata en
 la base de datos (solo preserva `@@map`). Si se corre por error, revertir con
 `git checkout -- prisma/schema.prisma` en vez de reescribir a mano.
+
+## Convención de commits (Conventional Commits)
+
+| Tipo | Cuándo se usa | Ejemplo en este proyecto |
+|---|---|---|
+| `feat` | Funcionalidad nueva — un endpoint, un módulo, una capacidad que no existía | `feat: implement Clientes CRUD module` |
+| `fix` | Corrección de un bug — algo que no funcionaba como debía | `fix: use JwtModule.registerAsync to avoid race condition reading JWT_SECRET` |
+| `chore` | Configuración, dependencias, tareas de mantenimiento — sin lógica de negocio | `chore: install JWT, Passport and bcrypt dependencies` |
+| `docs` | Solo documentación — README, comentarios extensos, notas | `docs: add personal learning notes for interview prep` |
+| `refactor` | Cambia el diseño/estructura de algo que ya funcionaba, sin agregar funcionalidad nueva ni corregir un bug | `refactor: use lightweight select in Clientes findAll, include inactive records` |
+
+**Regla para decidir entre `feat` y `refactor`:** si el endpoint/comportamiento es nuevo, es `feat`. Si ya existía y solo cambia cómo está construido por dentro (o su contrato de respuesta), es `refactor`.
