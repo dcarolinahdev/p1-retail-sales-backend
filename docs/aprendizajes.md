@@ -121,6 +121,35 @@ para que esas variables queden disponibles en toda la app.
 `JwtStrategy` la ejecuta Passport en CADA request a una ruta protegida (verifica
 que el token siga siendo válido). Dos momentos distintos del mismo flujo de auth.
 
+### PATCH con id en la URL, no en el body — y por qué importa
+**Dónde:** `PATCH /clientes/:id`, `UpdateClienteDto` con `PartialType`
+
+El id del recurso va en la URL (`@Param('id')`), nunca en el body. Es la
+convención REST: la URL identifica QUÉ recurso, el body describe QUÉ CAMBIA
+de ese recurso. Ponerlo en ambos lados es redundante y abre una
+inconsistencia (¿cuál id es la verdad si no coinciden?).
+
+**Antipatrón visto en un proyecto anterior (cadena de causa-efecto):**
+1. La ruta de actualización no llevaba `:id` (algo como `PATCH /clientes`
+   a secas) → no había otra forma de identificar el recurso más que
+   metiendo el id en el body.
+2. Eso en cascada llevó a un verbo HTTP mal aplicado: se trataba la
+   actualización como un `PUT` (reemplazo completo) aunque se llamara
+   "PATCH" — exigía mandar el objeto entero, no solo lo que cambiaba.
+3. El síntoma visible era "el DTO llevaba muchos campos, incluyendo el id"
+   — pero ese síntoma no era la causa raíz, era la consecuencia de los
+   dos puntos anteriores (ruta + verbo).
+
+**Lección:** si un DTO de actualización se siente "sucio" (muchos campos
+obligatorios, id incluido), revisar primero la ruta y el verbo HTTP antes
+de asumir que el problema es solo el DTO — frecuentemente el DTO solo
+refleja un problema de diseño más arriba en la cadena.
+
+**Por qué el diseño de este proyecto lo evita:** `PATCH /clientes/:id`
+(id en la URL) + `UpdateClienteDto extends PartialType(CreateClienteDto)`
+(todo opcional) — permite mandar solo `{ "telefono": "..." }` sin repetir
+el resto, que es el comportamiento correcto de un PATCH real.
+
 ## Errores resueltos (y qué explican)
 
 ### ESM vs. CommonJS en el cliente de Prisma generado
