@@ -17,10 +17,19 @@ export class ClientesService {
     });
   }
 
-  // Solo lista clientes activos (soft delete respetado por defecto).
+  // Listado liviano: trae todos los clientes (activos e inactivos, para que
+  // el admin/vendedor pueda ver y reactivar los desactivados si hace falta),
+  // pero solo los campos esenciales para una vista de tabla — el detalle
+  // completo se consulta por separado en findOne().
   findAll() {
     return this.prisma.cliente.findMany({
-      where: { activo: true },
+      select: {
+        id: true,
+        nombres: true,
+        apellidos: true,
+        documentoIdentidad: true,
+        activo: true,
+      },
     });
   }
 
