@@ -24,6 +24,16 @@ export class PrismaExceptionFilter implements ExceptionFilter {
         });
         break;
       }
+      case 'P2003': {
+        // Violación de llave foránea (ej. categoriaId que no existe al crear un producto)
+        const campo = (exception.meta?.field_name as string) ?? 'relación';
+        response.status(HttpStatus.NOT_FOUND).json({
+          statusCode: HttpStatus.NOT_FOUND,
+          message: `El recurso relacionado no existe: ${campo}`,
+          error: 'Not Found',
+        });
+        break;
+      }
       case 'P2025': {
         // Registro no encontrado (ej. actualizar/eliminar un ID que no existe)
         response.status(HttpStatus.NOT_FOUND).json({
