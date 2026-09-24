@@ -25,6 +25,36 @@ módulo (no dentro de un método de una clase ya instanciada, como sí funciona
 bien en `PrismaService`) debe pasar por `ConfigService` con `registerAsync`/
 `forRootAsync`, no por acceso directo a `process.env`.
 
+### Soft delete
+
+**Dónde:** `Cliente.activo`, `ClientesService.remove()`
+
+`DELETE /clientes/:id` no borra la fila — hace un `update` que cambia
+`activo` a `false`. Necesario porque `Cliente` tiene integridad
+referencial con `Venta` (borrar de verdad rompería el historial de
+ventas). `findAll()` filtra por defecto solo los que el negocio
+necesita ver según el caso de uso (ver nota de "listado liviano" más
+abajo si se retoma ese ajuste).
+
+### RBAC por permiso vs. por rol hardcodeado
+**Dónde:** `PermissionsGuard`, tabla `RolPermiso`
+
+La regla "quién puede hacer qué" no vive en el código (nunca hay un
+`if (rol === 'admin')`), vive en los DATOS — qué filas existen en
+`RolPermiso`. El Guard solo pregunta genéricamente "¿el rol de este
+usuario tiene asociado el permiso X?".
+
+**Alternativas consideradas (y descartadas):**
+- Columnas booleanas en `Rol` (una por permiso) — requiere migración
+  de schema cada vez que se agrega un permiso nuevo.
+- Columnas booleanas por acción CRUD fija (`canCreate`, `canUpdate`...)
+  en una fila por módulo — no encaja con acciones no-CRUD (ej. futura
+  `ventas:anular`).
+
+**Por qué `RolPermiso` (tabla intermedia N:M):** agregar un permiso
+nuevo es solo insertar una fila, sin tocar el schema. Más flexible
+para un catálogo que va a crecer con cada módulo nuevo.
+
 ## Seguridad
 
 ### bcrypt vs. MD5 para hashing de contraseñas
@@ -41,6 +71,34 @@ generan hashes distintos, lo que anula las rainbow tables.
 En `AuthService.login`, ambos casos lanzan `UnauthorizedException('Credenciales inválidas')`
 sin distinguir cuál falló — evita que un atacante deduzca, probando emails al
 azar, cuáles corresponden a cuentas reales en el sistema.
+
+## Manejo de errores
+
+### `PrismaExceptionFilter`
+**Dónde:** `src/common/filters/prisma-exception.filter.ts`, registrado
+global en `main.ts` con `app.useGlobalFilters(...)`.
+
+Traduce errores "crudos" de Prisma (`PrismaClientKnownRequestError`) a
+respuestas HTTP consistentes — sin este filter, un `documentoIdentidad`
+duplicado devolvía un 500 genérico en vez de un 409 con mensaje claro.
+
+- `P2002` (restricción única violada) → 409 Conflict
+- `P2025` (registro no encontrado en update/delete) → 404 Not Found
+
+Convive sin conflicto con los `throw new XxxException(...)` manuales
+(como en `AuthService`) — son dos mecanismos distintos: uno para
+errores que la lógica de negocio detecta explícitamente, otro para
+errores que la base de datos rechaza directamente.
+
+### Cuándo SÍ dar detalle del error, cuándo NO
+En login (endpoint público, sin autenticar), el mensaje de error NO
+distingue "usuario no existe" de "password incorrecto" — evita que un
+atacante deduzca qué emails son cuentas reales.
+
+En Clientes (requiere estar autenticado), el error SÍ dice qué campo
+falló (ej. "ya existe un registro con ese valor en: documentoIdentidad")
+— el usuario ya es legítimo y necesita ese detalle para corregir su
+formulario. No hay beneficio de seguridad en ocultarlo aquí.
 
 ## Conceptos de NestJS
 
@@ -82,6 +140,19 @@ Corrido como chequeo de conexión, reescribe el schema completo a partir de la
 BD real — pierde comentarios explicativos que no existen como metadata en
 la base de datos (solo preserva `@@map`). Si se corre por error, revertir con
 `git checkout -- prisma/schema.prisma` en vez de reescribir a mano.
+
+## Herramientas y depuración
+
+### Postman: variables de Environment y el modal "Secrets Detected"
+Al pegar un JWT en una variable de Environment, Postman lo detecta
+como secreto y ofrece Secure/Override/Remove. En una sesión, "Remove"
+dejó el campo vacío en vez de conservar el valor pegado — causó una
+prueba de RBAC con resultado falso (parecía que el rol no cambiaba).
+
+Lección: después de cualquier acción sobre ese modal, verificar
+explícitamente que el valor SÍ quedó guardado (ej. con `GET /auth/profile`,
+que refleja el rol del token actual) antes de asumir que la variable
+se actualizó correctamente.
 
 ## Convención de commits (Conventional Commits)
 
